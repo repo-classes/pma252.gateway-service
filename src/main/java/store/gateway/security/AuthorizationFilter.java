@@ -29,9 +29,6 @@ public class AuthorizationFilter implements GlobalFilter {
     @Autowired
     private RouterValidator routerValidator;
 
-    @Autowired
-    private WebClient.Builder webClient;
-
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         logger.debug("filter: entrou no filtro de autorizacao");
@@ -72,14 +69,14 @@ public class AuthorizationFilter implements GlobalFilter {
     }
 
     private boolean isAuthMissing(ServerHttpRequest request) {
-        return !request.getHeaders().containsKey(AUTHORIZATION_HEADER);
+        return !request.getHeaders().containsHeader(AUTHORIZATION_HEADER);
     }
     
     // este metodo eh responsavel por enviar o token ao Auth Microservice
     // a fim de interpretar o token, a chamada eh feita via Rest.
     private Mono<Void> requestAuthTokenSolve(ServerWebExchange exchange, GatewayFilterChain chain, String jwt) {
         logger.debug("solve: solving jwt: " + jwt);
-        return webClient
+        return WebClient.builder()
             .defaultHeader(
                 HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE
             )
