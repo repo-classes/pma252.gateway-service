@@ -46,7 +46,9 @@ public class AuthorizationFilter implements GlobalFilter {
                 "filter: [Token]=[%s]",
                 token
             ));
-            return requestAuthTokenSolve(exchange, chain, token);
+            if (null != token && token.length() > 0) {
+                return requestAuthTokenSolve(exchange, chain, token);
+            }
         }
         logger.debug("filter: access is denied!");
         // when access is denied
