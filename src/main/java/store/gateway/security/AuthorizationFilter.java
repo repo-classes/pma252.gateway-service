@@ -22,8 +22,7 @@ import reactor.core.publisher.Mono;
 public class AuthorizationFilter implements GlobalFilter {
 
     private Logger logger = LoggerFactory.getLogger(AuthorizationFilter.class);
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String AUTHORIZATION_BEARER_HEADER = "Bearer";
+    private static final String AUTH_COOKIE_TOKEN = "__store_jwt_token";
     private static final String AUTH_SERVICE_TOKEN_SOLVE = "http://auth:8080/auth/solve";
 
     @Autowired
@@ -40,36 +39,18 @@ public class AuthorizationFilter implements GlobalFilter {
         }
         logger.debug("filter: rota eh segura");
 
-        if (!isAuthMissing(request)) {
-            logger.debug("filter: tem [Authorization] no Header");
-            String authorization = request.getHeaders().get(AUTHORIZATION_HEADER).get(0);
+        if (request.getCookies().containsKey(AUTH_COOKIE_TOKEN)) {
+            logger.debug("filter: tem [" + AUTH_COOKIE_TOKEN + "] no cookie");
+            String token = request.getCookies().getFirst(AUTH_COOKIE_TOKEN).getValue();
             logger.debug(String.format(
-                "filter: [Authorization]=[%s]",
-                authorization
+                "filter: [Token]=[%s]",
+                token
             ));
-            String[] parts = authorization.split(" ");
-            if (parts.length != 2) {
-                logger.debug("filter: bearer token is invalid");
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header is not well formatted");
-            }
-            if (!AUTHORIZATION_BEARER_HEADER.equals(parts[0])) {
-                logger.debug("filter: bearer token is invalid");
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header is not well formatted");
-            }
-            logger.debug("filter: bearer token is formatted");
-
-            final String jwt = parts[1];
-
-            return requestAuthTokenSolve(exchange, chain, jwt);
-
+            return requestAuthTokenSolve(exchange, chain, token);
         }
         logger.debug("filter: access is denied!");
-        // if access is denied
+        // when access is denied
         throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-    }
-
-    private boolean isAuthMissing(ServerHttpRequest request) {
-        return !request.getHeaders().containsHeader(AUTHORIZATION_HEADER);
     }
     
     // este metodo eh responsavel por enviar o token ao Auth Microservice
